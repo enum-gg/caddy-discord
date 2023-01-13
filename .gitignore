@@ -1,0 +1,5 @@
+/.idea/
+/cmd/caddy
+/Caddyfile
+/go.work
+/go.work.sum
