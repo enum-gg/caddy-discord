@@ -1,0 +1,24 @@
+{
+    discordauth {
+        client_id 1063333331771186
+        client_secret StKzYY66666669BtyXRH
+        redirect http://localhost:8080/discord/callback
+
+        realm really_cool_area {
+            * # Literally anyone that has a Discord Account
+        }
+    }
+}
+
+http://localhost:8080 {
+    route /discord/callback {
+        discordauth callback
+    }
+
+    route /hello {
+        protect with really_cool_area
+        respond "If you can see this you must have be logged into Discord!"
+    }
+
+    respond "Welcome to nothing"
+}

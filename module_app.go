@@ -13,7 +13,10 @@ var (
 	_ caddy.Provisioner = (*DiscordPortalApp)(nil)
 )
 
-const moduleName = "discordauth"
+const (
+	moduleName = "discordauth"
+	cookieName = "_DISCORDCADDY"
+)
 
 func init() {
 	caddy.RegisterModule(DiscordPortalApp{})
@@ -21,12 +24,12 @@ func init() {
 }
 
 type DiscordPortalApp struct {
-	ClientID      string   `json:"clientID"`
-	ClientSecret  string   `json:"clientSecret"`
-	RedirectURL   string   `json:"redirectURL"`
-	Realms        []*Realm `json:"realms"`
+	ClientID      string        `json:"clientID"`
+	ClientSecret  string        `json:"clientSecret"`
+	RedirectURL   string        `json:"redirectURL"`
+	Realms        RealmRegistry `json:"realms"`
 	oauthConfig   *oauth2.Config
-	InFlightState SessionStore `json:"inFlightState"`
+	InFlightState *SessionStore `json:"inFlightState"`
 }
 
 // CaddyModule returns the Caddy module information.
@@ -38,6 +41,7 @@ func (DiscordPortalApp) CaddyModule() caddy.ModuleInfo {
 }
 
 func (d *DiscordPortalApp) Provision(_ caddy.Context) error {
+	d.InFlightState = NewSessionStore()
 	return nil
 }
 

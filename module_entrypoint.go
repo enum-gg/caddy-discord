@@ -1,13 +1,13 @@
 package discordauth
 
 import (
-	"fmt"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"golang.org/x/oauth2"
 	"net/http"
+	"time"
 )
 
 func init() {
@@ -29,24 +29,36 @@ type ProtectCfg struct {
 type ProtectorPlugin struct {
 	OAuthConfig  *oauth2.Config
 	SessionStore *SessionStore
+	Realm        string
 }
 
 // ServeHTTP implements caddyhttp.MiddlewareHandler.
-func (e *ProtectorPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
-	//if NOT AUTHED...
-	// TODO: Proper state checking
-	url := e.OAuthConfig.AuthCodeURL("state", oauth2.ApprovalForce)
+func (e ProtectorPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
+	sID := SessionIDGenerator(32)
+
+	existingSession, _ := r.Cookie(cookieName)
+	if existingSession != nil {
+		// Check if real...
+	}
+
+	if err := e.SessionStore.StartAuthFlow(sID, r.URL, time.Now(), e.Realm); err != nil {
+		// TODO: Configurable redirect to error/borkage page
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		return nil
+	}
+
+	// TODO: Configurable entropy for state
+	url := e.OAuthConfig.AuthCodeURL(sID, oauth2.ApprovalForce)
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	return nil
-	//return next.ServeHTTP(w, r)
 }
 
-func (e *ProtectorPlugin) Provision(ctx caddy.Context) error {
+func (p *ProtectorPlugin) Provision(ctx caddy.Context) error {
 	ctxApp, _ := ctx.App(moduleName)
 	app := ctxApp.(*DiscordPortalApp)
-	e.OAuthConfig = app.getOAuthConfig()
-	e.SessionStore = &app.InFlightState
+	p.OAuthConfig = app.getOAuthConfig()
+	p.SessionStore = app.InFlightState
 
 	return nil
 }
@@ -58,7 +70,7 @@ func (ProtectorPlugin) CaddyModule() caddy.ModuleInfo {
 	}
 }
 
-func (ProtectorPlugin) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
+func (p *ProtectorPlugin) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	for d.Next() {
 		if d.NextArg() {
 			// allow "with" or "using"
@@ -70,9 +82,7 @@ func (ProtectorPlugin) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 				return d.ArgErr()
 			}
 
-			accessGroup := d.Val()
-			fmt.Println(accessGroup)
-			// TODO: SOMETHING
+			p.Realm = d.Val()
 		}
 	}
 

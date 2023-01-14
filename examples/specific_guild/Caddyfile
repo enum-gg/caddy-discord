@@ -1,0 +1,26 @@
+{
+    discordauth {
+        client_id 1063333331771186
+        client_secret StKzYY66666669BtyXRH
+        redirect http://localhost:8080/discord/callback
+
+        realm really_cool_area {
+            guild 87146212422 {
+                * # Anyone that has joined the guild
+            }
+        }
+    }
+}
+
+http://localhost:8080 {
+    route /discord/callback {
+        discordauth callback
+    }
+
+    route /hello {
+        protect with really_cool_area
+        respond "You must be a part of the guild if you can see this!"
+    }
+
+    respond "Welcome to nothing"
+}

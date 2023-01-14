@@ -35,14 +35,11 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 					return nil, d.ArgErr()
 				}
 			case "realm":
-				ag := &Realm{
-					Identifiers: []*AccessIdentifier{},
-				}
-
-				dpApp.Realms = append(dpApp.Realms, ag)
+				realmBuilder := NewRealmBuilder()
 
 				if d.NextArg() {
-					ag.Ref = d.Val()
+					realmBuilder.Name(d.Val())
+					//ag.Ref = d.Val()
 				}
 
 				for nesting := d.Nesting(); d.NextBlock(nesting); {
@@ -59,33 +56,21 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 
 							case "role":
 								if d.NextArg() {
-									ag.Identifiers = append(ag.Identifiers, &AccessIdentifier{
-										Resource:   "role",
-										Identifier: d.Val(),
-										GuildID:    guildID,
-									})
+									realmBuilder.AllowGuildRole(guildID, d.Val())
 								}
 								if d.NextArg() {
 									return nil, d.ArgErr()
 								}
 							case "user":
 								if d.NextArg() {
-									ag.Identifiers = append(ag.Identifiers, &AccessIdentifier{
-										Resource:   "user",
-										Identifier: d.Val(),
-										GuildID:    guildID,
-									})
+									realmBuilder.AllowGuildMember(guildID, d.Val())
 								}
 								if d.NextArg() {
 									return nil, d.ArgErr()
 								}
 
 							case "*":
-								ag.Identifiers = append(ag.Identifiers, &AccessIdentifier{
-									Resource:   "*",
-									Identifier: "",
-									GuildID:    guildID,
-								})
+								realmBuilder.AllowAllGuildMembers(guildID)
 
 								if d.NextArg() {
 									return nil, d.ArgErr()
@@ -99,11 +84,16 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 
 					case "user":
 						if d.NextArg() {
-							ag.Identifiers = append(ag.Identifiers, &AccessIdentifier{
-								Resource:   "user",
-								Identifier: d.Val(),
-							})
+							realmBuilder.AllowDiscordUser(d.Val())
 						}
+						if d.NextArg() {
+							return nil, d.ArgErr()
+						}
+
+					case "*":
+						// Anyone with a Discord Account...
+						realmBuilder.AllowAllDiscordUsers()
+
 						if d.NextArg() {
 							return nil, d.ArgErr()
 						}
@@ -114,6 +104,8 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 						return nil, d.Errf("unrecognized subdirective '%s'", d.Val())
 					}
 				}
+
+				dpApp.Realms = append(dpApp.Realms, realmBuilder.Build())
 
 			default:
 				return nil, d.Errf("unrecognized subdirective '%s'", d.Val())

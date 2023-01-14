@@ -6,7 +6,7 @@ import (
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
-	"github.com/dev-this/caddy-discordauth/internal/discord"
+	"github.com/enum-gg/caddy-discord/internal/discord"
 	"golang.org/x/oauth2"
 	"log"
 	"net/http"
@@ -27,6 +27,7 @@ type DiscordAuthPlugin struct {
 	Configuration []string
 	OAuth         *oauth2.Config
 	SessionStore  *SessionStore
+	Realms        *RealmRegistry
 }
 
 func (DiscordAuthPlugin) CaddyModule() caddy.ModuleInfo {
@@ -41,7 +42,8 @@ func (s *DiscordAuthPlugin) Provision(ctx caddy.Context) error {
 	app := ctxApp.(*DiscordPortalApp)
 
 	s.OAuth = app.getOAuthConfig()
-	s.SessionStore = &app.InFlightState
+	s.SessionStore = app.InFlightState
+	s.Realms = &app.Realms
 
 	return nil
 }
@@ -71,17 +73,72 @@ func (s *DiscordAuthPlugin) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 
 // ServeHTTP implements caddyhttp.MiddlewareHandler.
 func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
-	//d.w.Write([]byte(r.RemoteAddr))
 	ctx := context.Background()
+	q := r.URL.Query()
 
-	tok, err := d.OAuth.Exchange(ctx, r.URL.Query().Get("code"))
+	session, err := d.SessionStore.CompleteAuthFlow(q.Get("state"))
+	if err != nil {
+		// Unable to find session. Using load balancers? Server was restarted?
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		return nil
+	}
+
+	realm := d.Realms.ByName(session.realm)
+	if realm == nil {
+		// Unable to resolve realm
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		return nil
+	}
+
+	tok, err := d.OAuth.Exchange(ctx, q.Get("code"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	client := discord.NewClientWrapper(d.OAuth.Client(ctx, tok))
+	// REALM CHECKS HERE...
 
-	_, _ = client.FetchCurrentUser()
+	allowed := false
 
-	return next.ServeHTTP(w, r)
+	_, err = client.FetchCurrentUser()
+	if err != nil {
+		// Unable to resolve realm
+		http.Error(w, "Failed to resolve Discord User", http.StatusInternalServerError)
+		return nil
+	}
+
+	/*
+		for _, rule := range realm.Identifiers {
+			if ResourceRequiresGuild(rule.Resource) {
+				_, err := client.FetchGuildMembership(rule.GuildID)
+				if err != nil {
+					// check TYPE - probably not a member of guild...
+				}
+			} else if rule.Resource == DiscordUserRule {
+				if rule.Wildcard == true {
+					allowed = true
+					break
+				}
+			}
+		}*/
+
+	if allowed {
+
+		cookie := &http.Cookie{
+			Name:     cookieName,
+			Value:    SessionIDGenerator(64),
+			MaxAge:   0,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+			//Secure // TODO: Configurable
+		}
+
+		http.SetCookie(w, cookie)
+
+		return next.ServeHTTP(w, r)
+	}
+
+	// User failed realm checks
+	http.Error(w, "You do not have access to this", http.StatusForbidden)
+	return nil
 }
