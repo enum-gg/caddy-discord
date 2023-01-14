@@ -4,6 +4,11 @@ _<br />e.g. Accessing `/really-cool-people` requires user to have `{Role}` withi
 
 This package contains a module allowing authorization in Caddy based on a Discord Identity, by using  Discords OAuth2 flow (authorization code grant).
 
+---
+
+`caddy-discord` is licensed under [_GNU Affero General Public License v3.0_](https://github.com/enum-gg/caddy-discord/blob/main/LICENSE.md)
+
+---
 
 ### Caddy Modules
 ```
