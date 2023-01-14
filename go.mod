@@ -2,13 +2,17 @@ module github.com/enum-gg/caddy-discord
 
 go 1.19
 
+replace cloud.google.com/go => cloud.google.com/go v0.100.2
+
 require (
 	github.com/caddyserver/caddy/v2 v2.6.2
 	github.com/golang-jwt/jwt/v4 v4.4.3
+	github.com/google/go-cmp v0.5.9
 	golang.org/x/oauth2 v0.4.0
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -37,7 +41,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/cel-go v0.12.5 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -102,14 +106,16 @@ require (
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/term v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
+	google.golang.org/api v0.103.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect
-	google.golang.org/grpc v1.47.0 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd // indirect
+	google.golang.org/grpc v1.50.1 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
