@@ -56,7 +56,7 @@ Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.git
 ## Caddyfile Example
 ```caddyfile
 {
-    discordauth {
+    discord {
         client_id 1000000000000000000 # Discord app OAuth client ID 
         client_secret 8CEPZZZZZAfl_w19ZZZZW_k # Discord app OAuth secret
         redirect http://localhost:8080/discord/callback # Route you've configured with `discordauth callback`
@@ -75,7 +75,7 @@ Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.git
 
 http://localhost:8080 {
     route /discord/callback {
-        discordauth callback # Desigate route as OAuth callback endpoint
+        discord callback # Desigate route as OAuth callback endpoint
     }
 
     route /hello {

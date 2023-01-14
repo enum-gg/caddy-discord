@@ -24,7 +24,7 @@ func TestParsingGlobalOptions(t *testing.T) {
 		{
 			name: "all discord users",
 			dispenser: caddyfile.NewTestDispenser(`{
-				discordauth {
+				discord {
 					client_id 1000000000000005
 					client_secret 7SEWAAAA1AP_k
 					redirect http://localhost:8080/discord/callback
@@ -42,17 +42,16 @@ func TestParsingGlobalOptions(t *testing.T) {
 					{
 						"Ref":"really_cool_area",
 						"Identifiers": [
-							{"Resource":3,"Wildcard":true}
+							{"Resource":4,"Wildcard":true}
 						]
 					}
-				],
-				"inFlightState": null
+				]
 			}`,
 		},
 		{
 			name: "guild members only",
 			dispenser: caddyfile.NewTestDispenser(`{
-				discordauth {
+				discord {
 					client_id 1000000000000005
 					client_secret 7SEWAAAA1AP_k
 					redirect http://localhost:8080/discord/callback
@@ -75,14 +74,13 @@ func TestParsingGlobalOptions(t *testing.T) {
 							{"Resource":1,"GuildID":"12354","Wildcard":true}
 						]
 					}
-				],
-				"inFlightState": null
+				]
 			}`,
 		},
 		{
 			name: "explicit user id and everyone on discord",
 			dispenser: caddyfile.NewTestDispenser(`{
-				discordauth {
+				discord {
 					client_id 1000000000000005
 					client_secret 7SEWAAAA1AP_k
 					redirect http://localhost:8080/discord/callback
@@ -106,7 +104,7 @@ func TestParsingGlobalOptions(t *testing.T) {
 					{
 						"Ref":"really_cool_area",
 						"Identifiers": [
-							{"Resource":3,"Identifier":"314009365487026176"}
+							{"Resource":4,"Identifier":"314009365487026176"}
 						]
 					},
 					{
@@ -115,8 +113,7 @@ func TestParsingGlobalOptions(t *testing.T) {
 							{"Resource":1,"GuildID":"679814978257027100","Wildcard":true}
 						]
 					}
-				],
-				"inFlightState": null
+				]
 			}`,
 		},
 	}

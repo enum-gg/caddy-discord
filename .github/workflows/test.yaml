@@ -31,7 +31,9 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build
-        run: go build -v ./...
+        run: |
+          go build -v ./...
+          go mod tidy
 
       - name: Test
         uses: robherley/go-test-action@v0.1.0

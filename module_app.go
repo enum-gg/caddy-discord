@@ -30,7 +30,7 @@ type DiscordPortalApp struct {
 	RedirectURL  string        `json:"redirectURL"`
 	Realms       RealmRegistry `json:"realms"`
 	oauthConfig  *oauth2.Config
-	Key          string `json:"key"`
+	Key          string `json:"key,omitempty"`
 }
 
 // CaddyModule returns the Caddy module information.
