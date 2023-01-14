@@ -1,7 +1,7 @@
 package discordauth
 
 type AccessIdentifier struct {
-	Resource   string `json:"Resource"` // role, user, channel... `
+	Resource   string `json:"Resource"` // role, user
 	Identifier string `json:"Identifier"`
 	GuildID    string `json:"GuildID"`
 }

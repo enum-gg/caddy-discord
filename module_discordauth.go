@@ -2,11 +2,11 @@ package discordauth
 
 import (
 	"context"
-	"fmt"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
+	"github.com/dev-this/caddy-discordauth/internal/discord"
 	"golang.org/x/oauth2"
 	"log"
 	"net/http"
@@ -26,6 +26,7 @@ func parseCaddyfileHandlerDirective(h httpcaddyfile.Helper) (caddyhttp.Middlewar
 type DiscordAuthPlugin struct {
 	Configuration []string
 	OAuth         *oauth2.Config
+	SessionStore  *SessionStore
 }
 
 func (DiscordAuthPlugin) CaddyModule() caddy.ModuleInfo {
@@ -38,9 +39,9 @@ func (DiscordAuthPlugin) CaddyModule() caddy.ModuleInfo {
 func (s *DiscordAuthPlugin) Provision(ctx caddy.Context) error {
 	ctxApp, _ := ctx.App(moduleName)
 	app := ctxApp.(*DiscordPortalApp)
-	fmt.Println(app)
 
 	s.OAuth = app.getOAuthConfig()
+	s.SessionStore = &app.InFlightState
 
 	return nil
 }
@@ -54,9 +55,10 @@ func (s *DiscordAuthPlugin) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	s.Configuration = []string{}
 
 	for d.Next() {
-		s.Configuration = append(s.Configuration, d.Val())
 		if d.NextArg() {
 			if d.Val() == "callback" {
+				s.Configuration = append(s.Configuration, d.Val())
+
 				if d.NextArg() {
 					return d.ArgErr()
 				}
@@ -77,14 +79,9 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, nex
 		log.Fatal(err)
 	}
 
-	if err != nil {
-		// TODO: ERROR
-	}
+	client := discord.NewClientWrapper(d.OAuth.Client(ctx, tok))
 
-	client := d.OAuth.Client(ctx, tok)
-	res, _ := client.Get("https://discord.com/api/users/@me")
-
-	fmt.Println(res)
+	_, _ = client.FetchCurrentUser()
 
 	return next.ServeHTTP(w, r)
 }

@@ -3,12 +3,11 @@ This package contains a module to bridge Discord and Caddy together for the purp
 
 Authenticate routes based on 'realms' which are a collection of your rules, corresponding with a Discord identity, both within a Guild context or globally.
 
-| Resource    | Description                                                 | Example                                                                                                                                                 |
-|-------------|-------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-| User ID     | Discord User IDs (_no guild context required_)       | <pre>realm godmode {<br />  user_id 314009111187026172 <br />}                                                                                          |
-| Guild       | Any user that exists  _within the guild_                    | <pre>realm cool_guild_users {<br />  guild 1063070451111289907 {<br />    * # Allows all users<br />  }<br />}                                          |
-| Role        | Users that assigned a specific role _within a guild_        | <pre>realm cool_role {<br />  guild 1063070451111289907 {<br />    role_id 106301111332755034<br />    role_id 106301111332755034<br />  }<br />}</pre> |
-| Channel IDs | Users that have permission to view channel _within a guild_ | <pre>realm channel_whitelist {<br />  guild 1063070451111289907 {<br />    channel_id 1060211512<br />    channel_id 1060761112<br />  }<br />}</pre>  |
+| Resource        | Description                                                 | Example                                                                                                                                                                                                                        |
+|-----------------|-------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| User ID         | Discord User IDs (_optionally with guild presence_)         | <pre>realm godmode {<br />  user 314009111187026172 # Allow user globally regardless of their guild <br />  guild 1063070451111289907 {<br />    user 314009111187026199 # Allow user if they're part of guild<br />  }<br />} |
+| Guild           | Any user that exists  _within the guild_                    | <pre>realm cool_guild_users {<br />  guild 1063070451111289907 {<br />    * # Allows all users <br />  }<br />}                                                                                                                |
+| Role            | Users that assigned a specific role _within a guild_        | <pre>realm cool_role {<br />  guild 1063070451111289907 {<br />    role 106301111332755034<br />    role 106301111332755034<br />  }<br />}</pre>                                                                              |
 
 
 Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.github.io/docs/authenticate/oauth/backend-oauth2-0013-discord), with a much stronger focus on coupling Discord and Caddy for authentication purposes.
@@ -27,9 +26,12 @@ Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.git
 There are two components required for Caddy Discord-Auth
 
 ### Discord App
-An app is required for the module to be able to determine Guild User information.
+> **Bot account does NOT need to be enabled**
+
+An OAuth app is required by a Discord App to be able to request Guild User information using the Auth Code flow.
 
 OAuth scopes required `identify`
+
 
 ### Caddy Modules
 ```
@@ -47,10 +49,9 @@ http.handler.discordauth
 
         realm really_cool_area {
             guild 106307051119907 {
-                role_id 10630111112755034
-                user_id 31400111187026172
-                channel_id 106311116556734
+                role 10630111112755034
             }
+            user 31400111187026172
         }
     }
 }
@@ -66,7 +67,7 @@ http://localhost:8091 {
         respond "Only really cool people can see this!"
     }
 
-    respond "Hello, worBASE ld!"
+    respond "Hello, world!"
 }
 
 ```

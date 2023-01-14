@@ -21,11 +21,12 @@ func init() {
 }
 
 type DiscordPortalApp struct {
-	ClientID     string   `json:"clientID"`
-	ClientSecret string   `json:"clientSecret"`
-	RedirectURL  string   `json:"redirectURL"`
-	Realms       []*Realm `json:"realms"`
-	oauthConfig  *oauth2.Config
+	ClientID      string   `json:"clientID"`
+	ClientSecret  string   `json:"clientSecret"`
+	RedirectURL   string   `json:"redirectURL"`
+	Realms        []*Realm `json:"realms"`
+	oauthConfig   *oauth2.Config
+	InFlightState SessionStore `json:"inFlightState"`
 }
 
 // CaddyModule returns the Caddy module information.
@@ -71,7 +72,7 @@ func (d DiscordPortalApp) getOAuthConfig() *oauth2.Config {
 		d.oauthConfig = &oauth2.Config{
 			ClientID:     d.ClientID,
 			ClientSecret: d.ClientSecret,
-			Scopes:       []string{"identify"},
+			Scopes:       []string{"identify", "guilds.members.read"},
 			Endpoint: oauth2.Endpoint{
 				AuthURL:  "https://discord.com/oauth2/authorize",
 				TokenURL: "https://discord.com/api/oauth2/token",

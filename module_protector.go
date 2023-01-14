@@ -27,7 +27,8 @@ type ProtectCfg struct {
 }
 
 type ProtectorPlugin struct {
-	OAuthConfig *oauth2.Config
+	OAuthConfig  *oauth2.Config
+	SessionStore *SessionStore
 }
 
 // ServeHTTP implements caddyhttp.MiddlewareHandler.
@@ -44,8 +45,8 @@ func (e *ProtectorPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, next
 func (e *ProtectorPlugin) Provision(ctx caddy.Context) error {
 	ctxApp, _ := ctx.App(moduleName)
 	app := ctxApp.(*DiscordPortalApp)
-	fmt.Println(app)
 	e.OAuthConfig = app.getOAuthConfig()
+	e.SessionStore = &app.InFlightState
 
 	return nil
 }
@@ -60,7 +61,8 @@ func (ProtectorPlugin) CaddyModule() caddy.ModuleInfo {
 func (ProtectorPlugin) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	for d.Next() {
 		if d.NextArg() {
-			if d.Val() != "with" {
+			// allow "with" or "using"
+			if d.Val() != "with" && d.Val() != "using" {
 				return d.ArgErr()
 			}
 
@@ -70,6 +72,7 @@ func (ProtectorPlugin) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 
 			accessGroup := d.Val()
 			fmt.Println(accessGroup)
+			// TODO: SOMETHING
 		}
 	}
 

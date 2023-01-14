@@ -57,7 +57,7 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 						for nesting := d.Nesting(); d.NextBlock(nesting); {
 							switch d.Val() {
 
-							case "role_id":
+							case "role":
 								if d.NextArg() {
 									ag.Identifiers = append(ag.Identifiers, &AccessIdentifier{
 										Resource:   "role",
@@ -68,7 +68,7 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 								if d.NextArg() {
 									return nil, d.ArgErr()
 								}
-							case "user_id":
+							case "user":
 								if d.NextArg() {
 									ag.Identifiers = append(ag.Identifiers, &AccessIdentifier{
 										Resource:   "user",
@@ -80,22 +80,35 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 									return nil, d.ArgErr()
 								}
 
-							case "channel_id":
-								if d.NextArg() {
-									ag.Identifiers = append(ag.Identifiers, &AccessIdentifier{
-										Resource:   "channel",
-										Identifier: d.Val(),
-										GuildID:    guildID,
-									})
-								}
+							case "*":
+								ag.Identifiers = append(ag.Identifiers, &AccessIdentifier{
+									Resource:   "*",
+									Identifier: "",
+									GuildID:    guildID,
+								})
+
 								if d.NextArg() {
 									return nil, d.ArgErr()
 								}
+								break
 							default:
 								return nil, d.Errf("unrecognized subdirective '%s'", d.Val())
 
 							}
 						}
+
+					case "user":
+						if d.NextArg() {
+							ag.Identifiers = append(ag.Identifiers, &AccessIdentifier{
+								Resource:   "user",
+								Identifier: d.Val(),
+							})
+						}
+						if d.NextArg() {
+							return nil, d.ArgErr()
+						}
+
+						break
 
 					default:
 						return nil, d.Errf("unrecognized subdirective '%s'", d.Val())
