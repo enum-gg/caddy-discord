@@ -1,4 +1,4 @@
-package discordauth
+package caddydiscord
 
 const (
 	Unknown          DiscordResource = 0
@@ -7,7 +7,7 @@ const (
 	// DiscordMemberRule represents a specific Discord User within a specific guild
 	DiscordMemberRule DiscordResource = 3
 	// DiscordUserRule represents a Discord User Snowflake ID
-	DiscordUserRule DiscordResource = 3
+	DiscordUserRule DiscordResource = 4
 )
 
 type DiscordResource int

@@ -1,20 +1,28 @@
-package discordauth
+package caddydiscord
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"github.com/enum-gg/caddy-discord/internal/discord"
 	"golang.org/x/oauth2"
-	"log"
 	"net/http"
+	"time"
+)
+
+var (
+	_ caddy.Provisioner           = (*DiscordAuthPlugin)(nil)
+	_ caddyhttp.MiddlewareHandler = (*DiscordAuthPlugin)(nil)
+	_ caddy.Validator             = (*DiscordAuthPlugin)(nil)
 )
 
 func init() {
 	caddy.RegisterModule(DiscordAuthPlugin{})
-	httpcaddyfile.RegisterHandlerDirective(moduleName, parseCaddyfileHandlerDirective)
+	httpcaddyfile.RegisterHandlerDirective("discord", parseCaddyfileHandlerDirective)
 }
 
 func parseCaddyfileHandlerDirective(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
@@ -24,15 +32,17 @@ func parseCaddyfileHandlerDirective(h httpcaddyfile.Helper) (caddyhttp.Middlewar
 }
 
 type DiscordAuthPlugin struct {
-	Configuration []string
-	OAuth         *oauth2.Config
-	SessionStore  *SessionStore
-	Realms        *RealmRegistry
+	Configuration   []string
+	OAuth           *oauth2.Config
+	Realms          *RealmRegistry
+	Key             string
+	tokenSigner     TokenSignerSignature
+	flowTokenParser FlowTokenParserSignature
 }
 
 func (DiscordAuthPlugin) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
-		ID:  "http.handlers.discordauth",
+		ID:  "http.handlers.discord",
 		New: func() caddy.Module { return new(DiscordAuthPlugin) },
 	}
 }
@@ -42,9 +52,20 @@ func (s *DiscordAuthPlugin) Provision(ctx caddy.Context) error {
 	app := ctxApp.(*DiscordPortalApp)
 
 	s.OAuth = app.getOAuthConfig()
-	s.SessionStore = app.InFlightState
 	s.Realms = &app.Realms
 
+	key, err := hex.DecodeString(app.Key)
+	if err != nil {
+		return err
+	}
+
+	s.tokenSigner = NewTokenSigner(key)
+	s.flowTokenParser = NewFlowTokenParser(key)
+
+	return nil
+}
+
+func (s *DiscordAuthPlugin) Validate() error {
 	return nil
 }
 
@@ -72,73 +93,90 @@ func (s *DiscordAuthPlugin) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 }
 
 // ServeHTTP implements caddyhttp.MiddlewareHandler.
-func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
+func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ caddyhttp.Handler) error {
 	ctx := context.Background()
 	q := r.URL.Query()
 
-	session, err := d.SessionStore.CompleteAuthFlow(q.Get("state"))
+	token, err := d.flowTokenParser(q.Get("state"))
 	if err != nil {
 		// Unable to find session. Using load balancers? Server was restarted?
 		http.Error(w, "Internal Error", http.StatusInternalServerError)
-		return nil
+		return err
 	}
 
-	realm := d.Realms.ByName(session.realm)
+	realm := d.Realms.ByName(token.Realm)
 	if realm == nil {
 		// Unable to resolve realm
 		http.Error(w, "Internal Error", http.StatusInternalServerError)
-		return nil
+		return err
 	}
 
 	tok, err := d.OAuth.Exchange(ctx, q.Get("code"))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	client := discord.NewClientWrapper(d.OAuth.Client(ctx, tok))
-	// REALM CHECKS HERE...
 
 	allowed := false
 
-	_, err = client.FetchCurrentUser()
-	if err != nil {
+	identity, err := client.FetchCurrentUser()
+	if err != nil || len(identity.ID) == 0 {
 		// Unable to resolve realm
 		http.Error(w, "Failed to resolve Discord User", http.StatusInternalServerError)
+		return err
+	}
+
+	for _, rule := range realm.Identifiers {
+		if ResourceRequiresGuild(rule.Resource) {
+			_, err := client.FetchGuildMembership(rule.GuildID)
+			if err != nil {
+				continue
+				// TODO: check error type - probably not a member of guild...
+			}
+
+			// TODO assert guildMember has data
+			allowed = true
+		} else if rule.Resource == DiscordUserRule && rule.Wildcard == false && rule.Identifier == identity.ID {
+			allowed = true
+			break
+		} else if rule.Resource == DiscordUserRule && rule.Wildcard == true {
+			allowed = true
+			break
+		}
+	}
+
+	if !allowed {
+		// User failed realm checks
+		//http.Error(w, "You do not have access to this", http.StatusForbidden)
+		http.Redirect(w, r, token.RedirectURI, http.StatusFound)
+
 		return nil
 	}
+	// Re-validate user through OAuth2 flow every 16 hours
+	expiration := time.Now().Add(time.Hour * 16)
 
-	/*
-		for _, rule := range realm.Identifiers {
-			if ResourceRequiresGuild(rule.Resource) {
-				_, err := client.FetchGuildMembership(rule.GuildID)
-				if err != nil {
-					// check TYPE - probably not a member of guild...
-				}
-			} else if rule.Resource == DiscordUserRule {
-				if rule.Wildcard == true {
-					allowed = true
-					break
-				}
-			}
-		}*/
-
-	if allowed {
-
-		cookie := &http.Cookie{
-			Name:     cookieName,
-			Value:    SessionIDGenerator(64),
-			MaxAge:   0,
-			HttpOnly: true,
-			SameSite: http.SameSiteStrictMode,
-			//Secure // TODO: Configurable
-		}
-
-		http.SetCookie(w, cookie)
-
-		return next.ServeHTTP(w, r)
+	authedToken := NewAuthenticatedToken(*identity, realm.Ref, expiration)
+	signedToken, err := d.tokenSigner(authedToken)
+	if err != nil {
+		// Unable to generate JWT
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return err
 	}
 
-	// User failed realm checks
-	http.Error(w, "You do not have access to this", http.StatusForbidden)
+	cookie := &http.Cookie{
+		Name:     fmt.Sprintf("%s_%s", cookieName, realm.Ref),
+		Value:    signedToken,
+		Expires:  expiration,
+		HttpOnly: true,
+		// Strict mode breaks functionality - due to discord referrer.
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
+		//Secure // TODO: Configurable
+	}
+
+	http.SetCookie(w, cookie)
+	http.Redirect(w, r, token.RedirectURI, http.StatusFound)
+
 	return nil
 }

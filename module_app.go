@@ -1,6 +1,7 @@
-package discordauth
+package caddydiscord
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
@@ -14,22 +15,22 @@ var (
 )
 
 const (
-	moduleName = "discordauth"
+	moduleName = "discord"
 	cookieName = "_DISCORDCADDY"
 )
 
 func init() {
 	caddy.RegisterModule(DiscordPortalApp{})
-	httpcaddyfile.RegisterGlobalOption(moduleName, parseCaddyfileGlobalOption)
+	httpcaddyfile.RegisterGlobalOption("discord", parseCaddyfileGlobalOption)
 }
 
 type DiscordPortalApp struct {
-	ClientID      string        `json:"clientID"`
-	ClientSecret  string        `json:"clientSecret"`
-	RedirectURL   string        `json:"redirectURL"`
-	Realms        RealmRegistry `json:"realms"`
-	oauthConfig   *oauth2.Config
-	InFlightState *SessionStore `json:"inFlightState"`
+	ClientID     string        `json:"clientID"`
+	ClientSecret string        `json:"clientSecret"`
+	RedirectURL  string        `json:"redirectURL"`
+	Realms       RealmRegistry `json:"realms"`
+	oauthConfig  *oauth2.Config
+	Key          string `json:"key"`
 }
 
 // CaddyModule returns the Caddy module information.
@@ -41,7 +42,7 @@ func (DiscordPortalApp) CaddyModule() caddy.ModuleInfo {
 }
 
 func (d *DiscordPortalApp) Provision(_ caddy.Context) error {
-	d.InFlightState = NewSessionStore()
+	d.Key = hex.EncodeToString(randomness(64))
 	return nil
 }
 

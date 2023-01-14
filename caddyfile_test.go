@@ -1,4 +1,4 @@
-package discordauth
+package caddydiscord
 
 import (
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
@@ -73,6 +73,46 @@ func TestParsingGlobalOptions(t *testing.T) {
 						"Ref":"nice_guild",
 						"Identifiers": [
 							{"Resource":1,"GuildID":"12354","Wildcard":true}
+						]
+					}
+				],
+				"inFlightState": null
+			}`,
+		},
+		{
+			name: "explicit user id and everyone on discord",
+			dispenser: caddyfile.NewTestDispenser(`{
+				discordauth {
+					client_id 1000000000000005
+					client_secret 7SEWAAAA1AP_k
+					redirect http://localhost:8080/discord/callback
+						
+					realm really_cool_area {
+						user 314009365487026176
+					}
+
+					realm nice_guild {
+						guild 679814978257027100 {
+							*
+						}
+					}
+				}
+			}`),
+			want: `{
+				"clientID":"1000000000000005",
+				"clientSecret":"7SEWAAAA1AP_k",
+				"redirectURL":"http://localhost:8080/discord/callback",
+				"realms":[
+					{
+						"Ref":"really_cool_area",
+						"Identifiers": [
+							{"Resource":3,"Identifier":"314009365487026176"}
+						]
+					},
+					{
+						"Ref":"nice_guild",
+						"Identifiers": [
+							{"Resource":1,"GuildID":"679814978257027100","Wildcard":true}
 						]
 					}
 				],

@@ -1,1 +1,1 @@
-package discordauth
+package caddydiscord

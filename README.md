@@ -12,8 +12,9 @@ This package contains a module allowing authorization in Caddy based on a Discor
 
 ### Caddy Modules
 ```
-discordauth
-http.handler.discordauth
+caddydiscord
+http.authentication.providers.discord
+http.handler.discord
 ```
 
 ## Discord Resources
@@ -90,5 +91,5 @@ http://localhost:8080 {
 
 ## Building
 ```
-xcaddy build --with github.com/enum-gg/caddy-discordauth=./
+xcaddy build --with github.com/enum-gg/caddy-discord=./
 ```

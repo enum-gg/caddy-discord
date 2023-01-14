@@ -1,4 +1,4 @@
-package discordauth
+package caddydiscord
 
 import (
 	"github.com/caddyserver/caddy/v2/caddyconfig"
@@ -9,7 +9,6 @@ import (
 // parseCaddyfileGlobalOption implements caddyfile.Unmarshaler.
 func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 	dpApp := new(DiscordPortalApp)
-
 	for d.Next() {
 		for nesting := d.Nesting(); d.NextBlock(nesting); {
 			switch d.Val() {
@@ -42,7 +41,7 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 					//ag.Ref = d.Val()
 				}
 
-				for nesting := d.Nesting(); d.NextBlock(nesting); {
+				for subNesting := d.Nesting(); d.NextBlock(subNesting); {
 					switch d.Val() {
 					case "guild":
 						if !d.NextArg() {
@@ -51,7 +50,7 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 
 						guildID := d.Val()
 
-						for nesting := d.Nesting(); d.NextBlock(nesting); {
+						for subSubNesting := d.Nesting(); d.NextBlock(subSubNesting); {
 							switch d.Val() {
 
 							case "role":
@@ -114,7 +113,7 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 	}
 
 	return httpcaddyfile.App{
-		Name:  "discordauth",
+		Name:  "discord",
 		Value: caddyconfig.JSON(dpApp, nil),
 	}, nil
 }

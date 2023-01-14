@@ -1,13 +1,23 @@
-package discordauth
+package caddydiscord
 
 import (
+	"encoding/hex"
+	"fmt"
 	"github.com/caddyserver/caddy/v2"
+	"github.com/caddyserver/caddy/v2/caddyconfig"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
+	"github.com/caddyserver/caddy/v2/modules/caddyhttp/caddyauth"
 	"golang.org/x/oauth2"
 	"net/http"
 	"time"
+)
+
+var (
+	_ caddyfile.Unmarshaler   = (*ProtectorPlugin)(nil)
+	_ caddy.Validator         = (*ProtectorPlugin)(nil)
+	_ caddyauth.Authenticator = (*ProtectorPlugin)(nil)
 )
 
 func init() {
@@ -18,7 +28,12 @@ func init() {
 func parseCaddyfileHandlerDirective2(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
 	var s ProtectorPlugin
 	s.UnmarshalCaddyfile(h.Dispenser)
-	return &s, s.UnmarshalCaddyfile(h.Dispenser)
+	return caddyauth.Authentication{
+		ProvidersRaw: caddy.ModuleMap{
+			"discord": caddyconfig.JSON(s, nil),
+		},
+	}, nil
+
 }
 
 type ProtectCfg struct {
@@ -27,45 +42,68 @@ type ProtectCfg struct {
 }
 
 type ProtectorPlugin struct {
-	OAuthConfig  *oauth2.Config
-	SessionStore *SessionStore
-	Realm        string
+	OAuthConfig       *oauth2.Config
+	tokenSigner       TokenSignerSignature
+	authedTokenParser AuthedTokenParserSignature
+	flowTokenParser   FlowTokenParserSignature
+	Realm             string
 }
 
-// ServeHTTP implements caddyhttp.MiddlewareHandler.
-func (e ProtectorPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
-	sID := SessionIDGenerator(32)
+// Authenticate implements caddyhttp.MiddlewareHandler.
+func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (caddyauth.User, bool, error) {
+	existingSession, _ := r.Cookie(fmt.Sprintf("%s_%s", cookieName, e.Realm))
 
-	existingSession, _ := r.Cookie(cookieName)
 	if existingSession != nil {
-		// Check if real...
+		claims, err := e.authedTokenParser(existingSession.Value)
+		if err != nil {
+			return caddyauth.User{}, false, err
+		}
+
+		return caddyauth.User{
+			ID: claims.Subject,
+			Metadata: map[string]string{
+				"username": claims.Username,
+				"avatar":   claims.Avatar,
+			},
+		}, true, nil
 	}
 
-	if err := e.SessionStore.StartAuthFlow(sID, r.URL, time.Now(), e.Realm); err != nil {
-		// TODO: Configurable redirect to error/borkage page
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
-		return nil
+	// 15 minutes to make it through Discord consent.
+	exp := time.Now().Add(time.Minute * 15)
+	token := NewAuthFlowToken(r.URL.String(), e.Realm, exp)
+	signedToken, err := e.tokenSigner(token)
+	if err != nil {
+		// Unable to generate JWT
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return caddyauth.User{}, false, err
 	}
 
-	// TODO: Configurable entropy for state
-	url := e.OAuthConfig.AuthCodeURL(sID, oauth2.ApprovalForce)
+	url := e.OAuthConfig.AuthCodeURL(signedToken, oauth2.SetAuthURLParam("prompt", "none"))
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-	return nil
+	return caddyauth.User{}, false, nil
 }
 
 func (p *ProtectorPlugin) Provision(ctx caddy.Context) error {
 	ctxApp, _ := ctx.App(moduleName)
 	app := ctxApp.(*DiscordPortalApp)
 	p.OAuthConfig = app.getOAuthConfig()
-	p.SessionStore = app.InFlightState
+
+	key, err := hex.DecodeString(app.Key)
+	if err != nil {
+		return err
+	}
+
+	p.tokenSigner = NewTokenSigner(key)
+	p.authedTokenParser = NewAuthedTokenParser(key)
+	p.flowTokenParser = NewFlowTokenParser(key)
 
 	return nil
 }
 
 func (ProtectorPlugin) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
-		ID:  "http.handlers.protect",
+		ID:  "http.authentication.providers.discord",
 		New: func() caddy.Module { return new(ProtectorPlugin) },
 	}
 }
@@ -86,5 +124,9 @@ func (p *ProtectorPlugin) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 		}
 	}
 
+	return nil
+}
+
+func (p *ProtectorPlugin) Validate() error {
 	return nil
 }

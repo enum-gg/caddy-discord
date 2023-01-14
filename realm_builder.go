@@ -1,4 +1,4 @@
-package discordauth
+package caddydiscord
 
 type RealmBuilder struct {
 	realm *Realm
@@ -24,7 +24,6 @@ func (r RealmBuilder) AllowDiscordUser(userID string) {
 	r.realm.Identifiers = append(r.realm.Identifiers, &AccessIdentifier{
 		Resource:   DiscordUserRule,
 		Identifier: userID,
-		Wildcard:   true,
 	})
 }
 

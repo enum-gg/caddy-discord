@@ -1,4 +1,4 @@
-package discordauth
+package caddydiscord
 
 type RealmRegistry []*Realm
 
