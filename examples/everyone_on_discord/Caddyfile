@@ -5,7 +5,8 @@
         redirect http://localhost:8080/discord/callback
 
         realm really_cool_area {
-            * # Literally anyone that has a Discord Account
+            # Literally anyone that has a Discord Account
+            *
         }
     }
 }

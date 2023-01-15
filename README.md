@@ -46,10 +46,10 @@ Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.git
 2. Create Discord Application ([Discord Developer Portal](https://discord.com/developers/applications))
     - New Application
     - OAuth2
-      - Obtain your Client ID & Client secret
-      - Add Redirects [Docs](https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-redirect-url-example)
+        - Obtain your Client ID & Client secret
+        - Add Redirects [Docs](https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-redirect-url-example)
 3. Prepare your `Caddyfile`
-    - Gather your Discord App OAuth2 Client ID & Client Secret, 
+    - Gather your Discord App OAuth2 Client ID & Client Secret,
     - Decide your route for caddy-discords to use as the OAuth2
 
 
@@ -75,13 +75,15 @@ Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.git
 
 http://localhost:8080 {
     route /discord/callback {
-        discord callback # Desigate route as OAuth callback endpoint
-    }
+         # Desigate route as OAuth callback endpoint
+         discord callback 
+   }
 
-    route /hello {
-        protect using really_cool_area # Only allow discord users that auth against 'really_cool_area' realm 
+    route /discordians-only {
+         # Only allow discord users that auth against 'really_cool_area' realm 
+         protect using really_cool_area 
         
-        respond "Only really cool people can see this!"
+         respond "Hello {http.auth.user.username}!<br /><br /><img src='https://cdn.discordapp.com/avatars/{http.auth.user.id}/{http.auth.user.avatar}?size=4096.png'> "
     }
 
     respond "Hello, world!"

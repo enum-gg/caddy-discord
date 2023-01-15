@@ -1,12 +1,13 @@
 {
-    discordauth {
+    discord {
         client_id 1063333331771186
         client_secret StKzYY66666669BtyXRH
         redirect http://localhost:8080/discord/callback
 
         realm really_cool_area {
             guild 87146212422 {
-                * # Anyone that has joined the guild
+                # All users within guild
+                *
             }
         }
     }
@@ -14,7 +15,7 @@
 
 http://localhost:8080 {
     route /discord/callback {
-        discordauth callback
+        discord callback
     }
 
     route /hello {
