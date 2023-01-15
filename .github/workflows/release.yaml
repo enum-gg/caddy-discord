@@ -18,12 +18,8 @@ jobs:
     steps:
       - if: ${{ startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-rc')  }}
         run: echo "flags=-f .goreleaser.rc.yml" >> $GITHUB_ENV
-      - run: |
-          go mod init builder
-          wget https://raw.githubusercontent.com/enum-gg/caddy-discord/main/.goreleaser.rc.yml
-          wget https://raw.githubusercontent.com/enum-gg/caddy-discord/main/build.go.tmpl
-          mv build.go.tmpl build.go
-          go get github.com/enum-gg/caddy-discord@latest
+      - name: Checkout code
+        uses: actions/checkout@v2
       - uses: actions/setup-go@v3
         with:
           go-version: 1.19
