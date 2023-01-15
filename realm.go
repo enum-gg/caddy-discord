@@ -39,7 +39,7 @@ func (r Realm) GetAllGuilds() []string {
 
 	guildIDs := make([]string, 0, len(guildMap))
 
-	for guildID, _ := range guildMap {
+	for guildID := range guildMap {
 		guildIDs = append(guildIDs, guildID)
 	}
 

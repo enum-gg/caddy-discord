@@ -41,8 +41,8 @@ Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.git
 
 1. Download caddy + caddy-discord
     - Using released binaries
-    - Docker image
     - Build yourself using `xcaddy`
+      - `xcaddy build --with github.com/enum-gg/caddy-discord`
 2. Create Discord Application ([Discord Developer Portal](https://discord.com/developers/applications))
     - New Application
     - OAuth2
