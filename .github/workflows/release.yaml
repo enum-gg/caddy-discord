@@ -1,0 +1,37 @@
+name: goreleaser
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+jobs:
+  release:
+    name: Update GitHub release
+    runs-on: ubuntu-latest
+    env:
+      flags: ""
+    steps:
+      - if: ${{ startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-rc')  }}
+        run: echo "flags=-f .goreleaser.rc.yml" >> $GITHUB_ENV
+      - run: |
+          go mod init builder
+          wget https://raw.githubusercontent.com/enum-gg/caddy-discord/main/.goreleaser.rc.yml
+          wget https://raw.githubusercontent.com/enum-gg/caddy-discord/main/build.go.tmpl
+          mv build.go.tmpl build.go
+          go get github.com/enum-gg/caddy-discord@latest
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+          cache: true
+      - uses: goreleaser/goreleaser-action@v4
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release ${{ env.flags }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

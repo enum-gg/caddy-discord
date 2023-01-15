@@ -13,8 +13,8 @@ builds:
       - arm64
     ldflags:
       - -s -w
-    main: ./cmd/agent
-    binary: agent
+    main: ./
+    binary: caddy-discord
 archives:
   - replacements:
       darwin: Darwin
