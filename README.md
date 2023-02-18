@@ -81,7 +81,7 @@ http://localhost:8080 {
 
     route /discordians-only {
          # Only allow discord users that auth against 'really_cool_area' realm 
-         protect using really_cool_area 
+         protect using clique 
         
          respond "Hello {http.auth.user.username}!<br /><br /><img src='https://cdn.discordapp.com/avatars/{http.auth.user.id}/{http.auth.user.avatar}?size=4096.png'> "
     }
