@@ -17,6 +17,13 @@ http.authentication.providers.discord
 http.handler.discord
 ```
 
+## Docker (Container)
+```sh
+docker run -p 8080:8080 \
+  --rm -v $PWD/Caddyfile:/etc/caddy/Caddyfile \
+  enumgg/caddy-discord:v1.0.1
+```
+
 ## Discord Resources
 **realm** allows you name a label and group together specific targeted Discord Users by using the directives below.
 
