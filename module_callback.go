@@ -11,6 +11,7 @@ import (
 	"github.com/enum-gg/caddy-discord/internal/discord"
 	"golang.org/x/oauth2"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -175,8 +176,17 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 		//Secure // TODO: Configurable
 	}
 
-	http.SetCookie(w, cookie)
-	http.Redirect(w, r, token.RedirectURI, http.StatusFound)
+	redirectToURL, _ := url.Parse(token.RedirectURI)
+	if r.Host != redirectToURL.Host {
+		q := redirectToURL.Query()
+		q.Set("DISCO_PASSTHROUGH", cookie.Value)
+		q.Set("DISCO_REALM", realm.Ref)
+		redirectToURL.RawQuery = q.Encode()
+	} else {
+		http.SetCookie(w, cookie)
+	}
+
+	http.Redirect(w, r, redirectToURL.String(), http.StatusFound)
 
 	return nil
 }

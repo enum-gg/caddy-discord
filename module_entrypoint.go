@@ -53,6 +53,30 @@ type ProtectorPlugin struct {
 func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (caddyauth.User, bool, error) {
 	existingSession, _ := r.Cookie(fmt.Sprintf("%s_%s", cookieName, e.Realm))
 
+	// Handle passing through signed token over to support multiple domains.
+	if existingSession == nil && r.URL.Query().Has("DISCO_PASSTHROUGH") && r.URL.Query().Has("DISCO_REALM") {
+		q := r.URL.Query()
+		signedToken := q.Get("DISCO_PASSTHROUGH")
+		realm := q.Get("DISCO_REALM")
+		q.Del("DISCO_PASSTHROUGH")
+		q.Del("DISCO_REALM")
+		r.URL.RawQuery = q.Encode()
+
+		cookie := &http.Cookie{
+			Name:     fmt.Sprintf("%s_%s", cookieName, realm),
+			Value:    signedToken,
+			Expires:  time.Now().Add(time.Hour * 16),
+			HttpOnly: true,
+			// Strict mode breaks functionality - due to discord referrer.
+			SameSite: http.SameSiteLaxMode,
+			Path:     "/",
+			//Secure // TODO: Configurable
+		}
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, r.URL.String(), http.StatusFound)
+		return caddyauth.User{}, false, nil
+	}
+
 	if existingSession != nil {
 		claims, err := e.authedTokenParser(existingSession.Value)
 		if err != nil {
@@ -70,7 +94,16 @@ func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (c
 
 	// 15 minutes to make it through Discord consent.
 	exp := time.Now().Add(time.Minute * 15)
-	token := NewAuthFlowToken(r.URL.String(), e.Realm, exp)
+	backToURL := *r.URL
+	if !backToURL.IsAbs() {
+		backToURL.Scheme = "http"
+		if r.TLS != nil {
+			backToURL.Scheme = "https"
+		}
+
+		backToURL.Host = r.Host
+	}
+	token := NewAuthFlowToken(backToURL.String(), e.Realm, exp)
 	signedToken, err := e.tokenSigner(token)
 	if err != nil {
 		// Unable to generate JWT
