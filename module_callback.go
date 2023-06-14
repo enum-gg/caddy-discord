@@ -58,7 +58,7 @@ func (s *DiscordAuthPlugin) Provision(ctx caddy.Context) error {
 	s.Realms = &app.Realms
 
 	s.CookieName = app.CookieName
-	if s.CookieName != "" {
+	if s.CookieName == "" {
 		// Use default cookie name if none provided
 		s.CookieName = defaultCookieName
 	}
@@ -137,7 +137,7 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 	identity, err := client.FetchCurrentUser()
 	if err != nil || len(identity.ID) == 0 {
 		// Unable to resolve realm
-		http.Error(w, "Failed to resolve Discord User", http.StatusInternalServerError)
+		http.Redirect(w, r, token.RedirectURI, http.StatusFound)
 		return err
 	}
 
@@ -164,7 +164,6 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 		// User failed realm checks
 		// http.Error(w, "You do not have access to this", http.StatusForbidden)
 		http.Redirect(w, r, token.RedirectURI, http.StatusFound)
-
 		return nil
 	}
 	// Re-validate user through OAuth2 flow every 16 hours

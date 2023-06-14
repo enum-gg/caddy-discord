@@ -124,7 +124,7 @@ func (p *ProtectorPlugin) Provision(ctx caddy.Context) error {
 	p.OAuthConfig = app.getOAuthConfig()
 
 	p.CookieName = app.CookieName
-	if p.CookieName != "" {
+	if p.CookieName == "" {
 		// Use default cookie name if none provided
 		p.CookieName = defaultCookieName
 	}
