@@ -52,7 +52,7 @@ type ProtectorPlugin struct {
 
 // Authenticate implements caddyhttp.MiddlewareHandler.
 func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (caddyauth.User, bool, error) {
-	existingSession, _ := r.Cookie(fmt.Sprintf("%s_%s", defaultCookieName, e.Realm))
+	existingSession, _ := r.Cookie(fmt.Sprintf("%s_%s", e.CookieName, e.Realm))
 
 	// Handle passing through signed token over to support multiple domains.
 	if existingSession == nil && r.URL.Query().Has("DISCO_PASSTHROUGH") && r.URL.Query().Has("DISCO_REALM") {
@@ -64,7 +64,7 @@ func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (c
 		r.URL.RawQuery = q.Encode()
 
 		cookie := &http.Cookie{
-			Name:     fmt.Sprintf("%s_%s", defaultCookieName, realm),
+			Name:     fmt.Sprintf("%s_%s", e.CookieName, realm),
 			Value:    signedToken,
 			Expires:  time.Now().Add(time.Hour * 16),
 			HttpOnly: true,
