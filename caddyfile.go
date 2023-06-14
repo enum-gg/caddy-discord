@@ -33,12 +33,19 @@ func parseCaddyfileGlobalOption(d *caddyfile.Dispenser, _ any) (any, error) {
 				if d.NextArg() {
 					return nil, d.ArgErr()
 				}
+			case "cookie_name":
+				if d.NextArg() {
+					dpApp.CookieName = d.Val()
+				}
+				if d.NextArg() {
+					return nil, d.ArgErr()
+				}
 			case "realm":
 				realmBuilder := NewRealmBuilder()
 
 				if d.NextArg() {
 					realmBuilder.Name(d.Val())
-					//ag.Ref = d.Val()
+					// ag.Ref = d.Val()
 				}
 
 				for subNesting := d.Nesting(); d.NextBlock(subNesting); {

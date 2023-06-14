@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"net/http"
+	"net/url"
+	"time"
+
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"github.com/enum-gg/caddy-discord/internal/discord"
 	"golang.org/x/oauth2"
-	"net/http"
-	"net/url"
-	"time"
 )
 
 var (
@@ -37,6 +38,7 @@ type DiscordAuthPlugin struct {
 	OAuth           *oauth2.Config
 	Realms          *RealmRegistry
 	Key             string
+	CookieName      string
 	tokenSigner     TokenSignerSignature
 	flowTokenParser FlowTokenParserSignature
 }
@@ -54,6 +56,12 @@ func (s *DiscordAuthPlugin) Provision(ctx caddy.Context) error {
 
 	s.OAuth = app.getOAuthConfig()
 	s.Realms = &app.Realms
+
+	s.CookieName = app.CookieName
+	if s.CookieName != "" {
+		// Use default cookie name if none provided
+		s.CookieName = defaultCookieName
+	}
 
 	key, err := hex.DecodeString(app.Key)
 	if err != nil {
@@ -101,14 +109,19 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 	token, err := d.flowTokenParser(q.Get("state"))
 	if err != nil {
 		// Unable to find session. Using load balancers? Server was restarted?
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		//
+		// We should redirect here anyway - otherwise a server restart will
+		// prevent users from accessing the page until their clear their cookies.
+		http.Redirect(w, r, token.RedirectURI, http.StatusFound)
 		return err
 	}
 
 	realm := d.Realms.ByName(token.Realm)
 	if realm == nil {
 		// Unable to resolve realm
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		//
+		// Same as above - we won't have the realm in memory after a server restart.
+		http.Redirect(w, r, token.RedirectURI, http.StatusFound)
 		return err
 	}
 
@@ -149,7 +162,7 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 
 	if !allowed {
 		// User failed realm checks
-		//http.Error(w, "You do not have access to this", http.StatusForbidden)
+		// http.Error(w, "You do not have access to this", http.StatusForbidden)
 		http.Redirect(w, r, token.RedirectURI, http.StatusFound)
 
 		return nil
@@ -166,14 +179,14 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 	}
 
 	cookie := &http.Cookie{
-		Name:     fmt.Sprintf("%s_%s", cookieName, realm.Ref),
+		Name:     fmt.Sprintf("%s_%s", d.CookieName, realm.Ref),
 		Value:    signedToken,
 		Expires:  expiration,
 		HttpOnly: true,
 		// Strict mode breaks functionality - due to discord referrer.
 		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
-		//Secure // TODO: Configurable
+		// Secure // TODO: Configurable
 	}
 
 	redirectToURL, _ := url.Parse(token.RedirectURI)

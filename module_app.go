@@ -3,6 +3,7 @@ package caddydiscord
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"golang.org/x/oauth2"
@@ -15,8 +16,8 @@ var (
 )
 
 const (
-	moduleName = "discord"
-	cookieName = "_DISCORDCADDY"
+	moduleName        = "discord"
+	defaultCookieName = "_DISCORDCADDY"
 )
 
 func init() {
@@ -29,6 +30,7 @@ type DiscordPortalApp struct {
 	ClientSecret string        `json:"clientSecret"`
 	RedirectURL  string        `json:"redirectURL"`
 	Realms       RealmRegistry `json:"realms"`
+	CookieName   string        `json:"cookieName"`
 	oauthConfig  *oauth2.Config
 	Key          string `json:"key,omitempty"`
 }
@@ -65,7 +67,7 @@ func (d DiscordPortalApp) Validate() error {
 	}
 
 	if d.RedirectURL == "" {
-		return fmt.Errorf("redirect URL has not bee configured")
+		return fmt.Errorf("redirect URL has not been configured")
 	}
 
 	return nil

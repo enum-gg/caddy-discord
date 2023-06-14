@@ -3,6 +3,9 @@ package caddydiscord
 import (
 	"encoding/hex"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
@@ -10,8 +13,6 @@ import (
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp/caddyauth"
 	"golang.org/x/oauth2"
-	"net/http"
-	"time"
 )
 
 var (
@@ -33,7 +34,6 @@ func parseCaddyfileHandlerDirective2(h httpcaddyfile.Helper) (caddyhttp.Middlewa
 			"discord": caddyconfig.JSON(s, nil),
 		},
 	}, nil
-
 }
 
 type ProtectCfg struct {
@@ -46,12 +46,13 @@ type ProtectorPlugin struct {
 	tokenSigner       TokenSignerSignature
 	authedTokenParser AuthedTokenParserSignature
 	flowTokenParser   FlowTokenParserSignature
+	CookieName        string
 	Realm             string
 }
 
 // Authenticate implements caddyhttp.MiddlewareHandler.
 func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (caddyauth.User, bool, error) {
-	existingSession, _ := r.Cookie(fmt.Sprintf("%s_%s", cookieName, e.Realm))
+	existingSession, _ := r.Cookie(fmt.Sprintf("%s_%s", defaultCookieName, e.Realm))
 
 	// Handle passing through signed token over to support multiple domains.
 	if existingSession == nil && r.URL.Query().Has("DISCO_PASSTHROUGH") && r.URL.Query().Has("DISCO_REALM") {
@@ -63,14 +64,14 @@ func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (c
 		r.URL.RawQuery = q.Encode()
 
 		cookie := &http.Cookie{
-			Name:     fmt.Sprintf("%s_%s", cookieName, realm),
+			Name:     fmt.Sprintf("%s_%s", defaultCookieName, realm),
 			Value:    signedToken,
 			Expires:  time.Now().Add(time.Hour * 16),
 			HttpOnly: true,
 			// Strict mode breaks functionality - due to discord referrer.
 			SameSite: http.SameSiteLaxMode,
 			Path:     "/",
-			//Secure // TODO: Configurable
+			// Secure // TODO: Configurable
 		}
 		http.SetCookie(w, cookie)
 		http.Redirect(w, r, r.URL.String(), http.StatusFound)
@@ -121,6 +122,12 @@ func (p *ProtectorPlugin) Provision(ctx caddy.Context) error {
 	ctxApp, _ := ctx.App(moduleName)
 	app := ctxApp.(*DiscordPortalApp)
 	p.OAuthConfig = app.getOAuthConfig()
+
+	p.CookieName = app.CookieName
+	if p.CookieName != "" {
+		// Use default cookie name if none provided
+		p.CookieName = defaultCookieName
+	}
 
 	key, err := hex.DecodeString(app.Key)
 	if err != nil {
