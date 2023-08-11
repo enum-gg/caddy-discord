@@ -21,3 +21,4 @@ jobs:
         with:
           release-type: go
           package-name: caddy-discord
+          token: ${{ secrets.NICE_TOKEN }}
