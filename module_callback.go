@@ -130,13 +130,23 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 
 	for _, rule := range realm.Identifiers {
 		if ResourceRequiresGuild(rule.Resource) {
-			_, err := client.FetchGuildMembership(rule.GuildID)
+			guildMembership, err := client.FetchGuildMembership(rule.GuildID)
 			if err != nil {
 				continue
 				// TODO: check error type - probably not a member of guild...
 			}
 
-			// TODO assert guildMember has data
+			if rule.Resource == DiscordRoleRule {
+				matchedRole := RoleChecker(rule.Identifier, guildMembership.Roles)
+
+				// Found a valid role assigned.
+				if matchedRole != "" {
+					allowed = true
+				}
+
+				break
+			}
+
 			allowed = true
 		} else if rule.Resource == DiscordUserRule && rule.Wildcard == false && rule.Identifier == identity.ID {
 			allowed = true
@@ -189,4 +199,14 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 	http.Redirect(w, r, redirectToURL.String(), http.StatusFound)
 
 	return nil
+}
+
+func RoleChecker(desiredRoleID string, roles []string) string {
+	for _, role := range roles {
+		if role == desiredRoleID {
+			return role
+		}
+	}
+
+	return ""
 }
