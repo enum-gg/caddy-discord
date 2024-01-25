@@ -157,17 +157,16 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 		}
 	}
 
-	if !allowed {
-		// User failed realm checks
-		//http.Error(w, "You do not have access to this", http.StatusForbidden)
-		http.Redirect(w, r, token.RedirectURI, http.StatusFound)
-
-		return nil
-	}
-	// Re-validate user through OAuth2 flow every 16 hours
+	// Re-validate user through OAuth2 flow every 16 hours when authorised
 	expiration := time.Now().Add(time.Hour * 16)
 
-	authedToken := NewAuthenticatedToken(*identity, realm.Ref, expiration)
+	// Otherwise re-validate user every 3 minutes if authorised failed
+	// in-case of Discord role change, etc.
+	if !allowed {
+		expiration = time.Now().Add(time.Minute * 3)
+	}
+
+	authedToken := NewAuthenticatedToken(*identity, realm.Ref, expiration, allowed)
 	signedToken, err := d.tokenSigner(authedToken)
 	if err != nil {
 		// Unable to generate JWT

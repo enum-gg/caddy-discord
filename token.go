@@ -21,8 +21,9 @@ type JWTManager struct {
 type AuthenticatedClaims struct {
 	Realm string `json:"realm,omitempty"`
 
-	Username string `json:"user,omitempty"`
-	Avatar   string `json:"avatar,omitempty"`
+	Username   string `json:"user,omitempty"`
+	Avatar     string `json:"avatar,omitempty"`
+	Authorised bool   `json:"authorised,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -40,11 +41,12 @@ func (f FlowTokenParser) GetAudience() string {
 	return "flow"
 }
 
-func NewAuthenticatedToken(identity discord.User, realm string, exp time.Time) *jwt.Token {
+func NewAuthenticatedToken(identity discord.User, realm string, exp time.Time, authorised bool) *jwt.Token {
 	claims := AuthenticatedClaims{
 		realm,
 		identity.Username,
 		identity.Avatar,
+		authorised,
 		jwt.RegisteredClaims{
 			Audience:  []string{"auth"},
 			ExpiresAt: jwt.NewNumericDate(exp),

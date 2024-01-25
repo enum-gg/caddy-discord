@@ -89,7 +89,7 @@ func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (c
 				"username": claims.Username,
 				"avatar":   claims.Avatar,
 			},
-		}, true, nil
+		}, claims.Authorised, nil
 	}
 
 	// 15 minutes to make it through Discord consent.
