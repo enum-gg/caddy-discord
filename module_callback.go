@@ -142,9 +142,8 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 				// Found a valid role assigned.
 				if matchedRole != "" {
 					allowed = true
+					break
 				}
-
-				break
 			}
 
 			allowed = true
