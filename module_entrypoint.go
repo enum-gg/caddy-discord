@@ -62,6 +62,8 @@ func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (c
 		q.Del("DISCO_REALM")
 		r.URL.RawQuery = q.Encode()
 
+		// TODO: Expires should be reduced if authorisation failed.
+
 		cookie := &http.Cookie{
 			Name:     fmt.Sprintf("%s_%s", cookieName, realm),
 			Value:    signedToken,

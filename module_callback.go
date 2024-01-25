@@ -39,6 +39,7 @@ type DiscordAuthPlugin struct {
 	Key             string
 	tokenSigner     TokenSignerSignature
 	flowTokenParser FlowTokenParserSignature
+	signature       string
 }
 
 func (DiscordAuthPlugin) CaddyModule() caddy.ModuleInfo {
@@ -62,6 +63,7 @@ func (s *DiscordAuthPlugin) Provision(ctx caddy.Context) error {
 
 	s.tokenSigner = NewTokenSigner(key)
 	s.flowTokenParser = NewFlowTokenParser(key)
+	s.signature = app.Signature
 
 	return nil
 }

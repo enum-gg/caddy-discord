@@ -1,7 +1,6 @@
 package caddydiscord
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
@@ -31,6 +30,7 @@ type DiscordPortalApp struct {
 	Realms       RealmRegistry `json:"realms"`
 	oauthConfig  *oauth2.Config
 	Key          string `json:"key,omitempty"`
+	Signature    string `json:"signature,omitempty"`
 }
 
 // CaddyModule returns the Caddy module information.
@@ -42,7 +42,12 @@ func (DiscordPortalApp) CaddyModule() caddy.ModuleInfo {
 }
 
 func (d *DiscordPortalApp) Provision(_ caddy.Context) error {
-	d.Key = hex.EncodeToString(randomness(64))
+	// Discord App ID is used as entropy for JWT signing keys.
+	d.Key = hashString512(d.ClientID)
+
+	// TODO: Signature will be used for cookie integrity checks, to ensure checks are inline with most recent Caddyfile.
+	// TODOTODO: Use parsed caddyfile signature for checks, instead of just Discord App Client ID.
+	d.Signature = hashString256(d.ClientID, 16)
 	return nil
 }
 
