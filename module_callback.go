@@ -32,6 +32,12 @@ func parseCaddyfileHandlerDirective(h httpcaddyfile.Helper) (caddyhttp.Middlewar
 	return s, s.UnmarshalCaddyfile(h.Dispenser)
 }
 
+// DiscordAuthPlugin is used in combination with
+// http.authentication.providers.discord to provide an authentication
+// layer based on a Discord identity.
+//
+// See https://caddyserver.com/docs/modules/http.authentication.providers.discord
+// or https://github.com/enum-gg/caddy-discord
 type DiscordAuthPlugin struct {
 	Configuration   []string
 	OAuth           *oauth2.Config

@@ -41,6 +41,16 @@ type ProtectCfg struct {
 	ClientSecret string
 }
 
+// ProtectorPlugin allows you to authenticate caddy routes from
+// a Discord User Identity.
+//
+// e.g. Accessing /really-cool-people requires user to have {Role}
+// within {Guild}
+//
+// Discord's OAuth flow is used for identity using your
+// own Discord developer application.
+//
+// See an example Caddyfile https://github.com/enum-gg/caddy-discord#caddyfile-example
 type ProtectorPlugin struct {
 	OAuthConfig       *oauth2.Config
 	tokenSigner       TokenSignerSignature
