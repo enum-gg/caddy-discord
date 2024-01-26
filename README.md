@@ -1,6 +1,8 @@
 <img src="./assets/logo.png" width="40%" height="40%" align="right">
 
-# Caddy - Discord
+Caddy - Discord [![Discord](https://img.shields.io/discord/1063070457047289907.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/k9tVAwws8U)
+====
+
 tl;dr: Authenticate caddy routes based on a Discord User Identity.
 _<br />e.g. Accessing `/really-cool-people` requires user to have `{Role}` within `{Guild}`_
 
@@ -8,8 +10,8 @@ This package contains a module allowing authorization in Caddy based on a Discor
 
 ---
 
-`caddy-discord` is licensed under [_GNU Affero General Public License v3.0_](https://github.com/enum-gg/caddy-discord/blob/main/LICENSE.md)
-<br><i>Logo created by [@AutonomousCat](https://github.com/AutonomousCat/)</i>
+Licensed under [_GNU Affero General Public License v3.0_](https://github.com/enum-gg/caddy-discord/blob/main/LICENSE.md)
+<br><i>Logo by [@AutonomousCat](https://github.com/AutonomousCat/)</i>
 
 ---
 
@@ -37,13 +39,6 @@ docker run -p 8080:8080 \
 | Role            | Users that assigned a specific role _within a guild_        | <pre>realm cool_role {<br />  guild 1063070451111289907 {<br />    role 106301111332755034<br />    role 106301111332755034<br />  }<br />}</pre>                                                                                |
 
 Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.github.io/docs/authenticate/oauth/backend-oauth2-0013-discord), with a much stronger focus on coupling Discord and Caddy for authentication purposes.
-
-<div align="center">
-	<br />
-	<p>
-		<a href="https://discord.gg/k9tVAwws8U"><img src="https://img.shields.io/discord/1063070457047289907?color=5865F2&logo=discord&logoColor=white" alt="Discord server" /></a>
-	</p>
-</div>
 
 # Install
 
