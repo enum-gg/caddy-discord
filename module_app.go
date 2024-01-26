@@ -23,14 +23,38 @@ func init() {
 	httpcaddyfile.RegisterGlobalOption("discord", parseCaddyfileGlobalOption)
 }
 
+// DiscordPortalApp allows you to authenticate caddy routes based
+// on a Discord User Identity.
+//
+// e.g. Accessing /really-cool-people requires user to have {Role}
+// within {Guild}
+//
+// Discord's OAuth flow is used for identity using your
+// own Discord developer application.
+//
+// See an example Caddyfile https://github.com/enum-gg/caddy-discord#caddyfile-example
 type DiscordPortalApp struct {
-	ClientID     string        `json:"clientID"`
-	ClientSecret string        `json:"clientSecret"`
-	RedirectURL  string        `json:"redirectURL"`
-	Realms       RealmRegistry `json:"realms"`
-	oauthConfig  *oauth2.Config
-	Key          string `json:"key,omitempty"`
-	Signature    string `json:"signature,omitempty"`
+	// ClientID is the "Client ID" from your Discord Application OAuth information
+	ClientID string `json:"clientID"`
+
+	// ClientSecret is the "Client Secret" from your Discord Application
+	// OAuth information.
+	//
+	// Treat this is sensitive. Do not share or expose it to anyone.
+	ClientSecret string `json:"clientSecret"`
+
+	// RedirectURL is the destination for clients for the OAuth flow
+	// Your Discord Application's OAuth "Redirects" needs to be aware
+	// of this endpoint.
+	//
+	// Within your Caddyfile this URL should be configured with "discord callback".
+	RedirectURL string `json:"redirectURL"`
+
+	// Realms group together explicit rules about whom to authorise.
+	Realms      RealmRegistry `json:"realms"`
+	oauthConfig *oauth2.Config
+	Key         string `json:"key,omitempty"`
+	Signature   string `json:"signature,omitempty"`
 }
 
 // CaddyModule returns the Caddy module information.

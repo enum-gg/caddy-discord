@@ -1,3 +1,5 @@
+<img src="./assets/logo.png" width="40%" height="40%" align="right">
+
 # Caddy - Discord
 tl;dr: Authenticate caddy routes based on a Discord User Identity.
 _<br />e.g. Accessing `/really-cool-people` requires user to have `{Role}` within `{Guild}`_
@@ -7,7 +9,7 @@ This package contains a module allowing authorization in Caddy based on a Discor
 ---
 
 `caddy-discord` is licensed under [_GNU Affero General Public License v3.0_](https://github.com/enum-gg/caddy-discord/blob/main/LICENSE.md)
-
+<br><i>Logo created by [@AutonomousCat](https://github.com/AutonomousCat/)</i>
 ---
 
 ### Caddy Modules
@@ -25,7 +27,7 @@ docker run -p 8080:8080 \
 ```
 
 ## Discord Resources
-**realm** allows you name a label and group together specific targeted Discord Users by using the directives below.
+**realm** allows you to name a label and group together specific targeted Discord Users by using the directives below.
 
 | Resource        | Description                                                 | Example                                                                                                                                                                                                                          |
 |-----------------|-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
