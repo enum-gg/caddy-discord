@@ -10,6 +10,7 @@ This package contains a module allowing authorization in Caddy based on a Discor
 
 `caddy-discord` is licensed under [_GNU Affero General Public License v3.0_](https://github.com/enum-gg/caddy-discord/blob/main/LICENSE.md)
 <br><i>Logo created by [@AutonomousCat](https://github.com/AutonomousCat/)</i>
+
 ---
 
 ### Caddy Modules
