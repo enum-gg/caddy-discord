@@ -3,7 +3,6 @@ package caddydiscord
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
@@ -45,7 +44,7 @@ type DiscordAuthPlugin struct {
 	Key             string
 	tokenSigner     TokenSignerSignature
 	flowTokenParser FlowTokenParserSignature
-	signature       string
+	cookie          CookieNamer
 }
 
 func (DiscordAuthPlugin) CaddyModule() caddy.ModuleInfo {
@@ -60,6 +59,7 @@ func (s *DiscordAuthPlugin) Provision(ctx caddy.Context) error {
 	app := ctxApp.(*DiscordPortalApp)
 
 	s.OAuth = app.getOAuthConfig()
+	s.cookie = CookieName(app.ExecutionKey)
 	s.Realms = &app.Realms
 
 	key, err := hex.DecodeString(app.Key)
@@ -69,7 +69,6 @@ func (s *DiscordAuthPlugin) Provision(ctx caddy.Context) error {
 
 	s.tokenSigner = NewTokenSigner(key)
 	s.flowTokenParser = NewFlowTokenParser(key)
-	s.signature = app.Signature
 
 	return nil
 }
@@ -147,14 +146,28 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 			if rule.Resource == DiscordRoleRule {
 				matchedRole := RoleChecker(rule.Identifier, guildMembership.Roles)
 
-				// Found a valid role assigned.
 				if matchedRole != "" {
+					// Authorised based on role whitelist.
 					allowed = true
 					break
 				}
 			}
 
-			allowed = true
+			if rule.Resource == DiscordGuildRule {
+				if rule.Wildcard == true {
+					// Authorised based on wildcard user within guild.
+					allowed = true
+					break
+				}
+			}
+
+			if rule.Resource == DiscordMemberRule {
+				if identity.ID == rule.Identifier {
+					// Authorised based on user whitelist.
+					allowed = true
+					break
+				}
+			}
 		} else if rule.Resource == DiscordUserRule && rule.Wildcard == false && rule.Identifier == identity.ID {
 			allowed = true
 			break
@@ -182,7 +195,7 @@ func (d DiscordAuthPlugin) ServeHTTP(w http.ResponseWriter, r *http.Request, _ c
 	}
 
 	cookie := &http.Cookie{
-		Name:     fmt.Sprintf("%s_%s", cookieName, realm.Ref),
+		Name:     d.cookie(realm.Ref),
 		Value:    signedToken,
 		Expires:  expiration,
 		HttpOnly: true,

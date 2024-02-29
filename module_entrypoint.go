@@ -2,7 +2,6 @@ package caddydiscord
 
 import (
 	"encoding/hex"
-	"fmt"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
@@ -36,11 +35,6 @@ func parseCaddyfileHandlerDirective2(h httpcaddyfile.Helper) (caddyhttp.Middlewa
 
 }
 
-type ProtectCfg struct {
-	ClientID     string
-	ClientSecret string
-}
-
 // ProtectorPlugin allows you to authenticate caddy routes from
 // a Discord User Identity.
 //
@@ -57,13 +51,15 @@ type ProtectorPlugin struct {
 	authedTokenParser AuthedTokenParserSignature
 	flowTokenParser   FlowTokenParserSignature
 	Realm             string
+	cookie            CookieNamer
 }
 
 // Authenticate implements caddyhttp.MiddlewareHandler.
-func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (caddyauth.User, bool, error) {
-	existingSession, _ := r.Cookie(fmt.Sprintf("%s_%s", cookieName, e.Realm))
+func (p *ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (caddyauth.User, bool, error) {
+	existingSession, _ := r.Cookie(p.cookie(p.Realm))
 
 	// Handle passing through signed token over to support multiple domains.
+	// TODO: Refactor this code into oblivion.
 	if existingSession == nil && r.URL.Query().Has("DISCO_PASSTHROUGH") && r.URL.Query().Has("DISCO_REALM") {
 		q := r.URL.Query()
 		signedToken := q.Get("DISCO_PASSTHROUGH")
@@ -75,7 +71,7 @@ func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (c
 		// TODO: Expires should be reduced if authorisation failed.
 
 		cookie := &http.Cookie{
-			Name:     fmt.Sprintf("%s_%s", cookieName, realm),
+			Name:     p.cookie(realm),
 			Value:    signedToken,
 			Expires:  time.Now().Add(time.Hour * 16),
 			HttpOnly: true,
@@ -90,7 +86,7 @@ func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (c
 	}
 
 	if existingSession != nil {
-		claims, err := e.authedTokenParser(existingSession.Value)
+		claims, err := p.authedTokenParser(existingSession.Value)
 		if err != nil {
 			return caddyauth.User{}, false, err
 		}
@@ -115,15 +111,15 @@ func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (c
 
 		backToURL.Host = r.Host
 	}
-	token := NewAuthFlowToken(backToURL.String(), e.Realm, exp)
-	signedToken, err := e.tokenSigner(token)
+	token := NewAuthFlowToken(backToURL.String(), p.Realm, exp)
+	signedToken, err := p.tokenSigner(token)
 	if err != nil {
 		// Unable to generate JWT
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return caddyauth.User{}, false, err
 	}
 
-	url := e.OAuthConfig.AuthCodeURL(signedToken, oauth2.SetAuthURLParam("prompt", "none"))
+	url := p.OAuthConfig.AuthCodeURL(signedToken, oauth2.SetAuthURLParam("prompt", "none"))
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	return caddyauth.User{}, false, nil
@@ -132,6 +128,7 @@ func (e ProtectorPlugin) Authenticate(w http.ResponseWriter, r *http.Request) (c
 func (p *ProtectorPlugin) Provision(ctx caddy.Context) error {
 	ctxApp, _ := ctx.App(moduleName)
 	app := ctxApp.(*DiscordPortalApp)
+	p.cookie = CookieName(app.ExecutionKey)
 	p.OAuthConfig = app.getOAuthConfig()
 
 	key, err := hex.DecodeString(app.Key)

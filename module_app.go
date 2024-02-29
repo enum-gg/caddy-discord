@@ -1,6 +1,7 @@
 package caddydiscord
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
@@ -53,8 +54,20 @@ type DiscordPortalApp struct {
 	// Realms group together explicit rules about whom to authorise.
 	Realms      RealmRegistry `json:"realms"`
 	oauthConfig *oauth2.Config
-	Key         string `json:"key,omitempty"`
-	Signature   string `json:"signature,omitempty"`
+
+	// Key is the signing key used for the JWT stored as the client's cookie
+	// it is ephemeral alongside the caddy server process.
+	Key string `json:"key,omitempty"`
+
+	// ExecutionKey is an ephemeral identifier for the client's cookie which contains
+	// the JWT payload proving Discord identity. It is the 'public' version of the signing Key.
+	//
+	// End users will have to perform the OAuth flow once uniquely per ExecutionKey,
+	//  which will be a touchless experience barely noticeably from their end.
+	//
+	// ExecutionKey exists as an alternative to the server operator providing their own
+	// JWT signing key; which should eventually become an optional configuration.
+	ExecutionKey string `json:"signature,omitempty"`
 }
 
 // CaddyModule returns the Caddy module information.
@@ -67,11 +80,9 @@ func (DiscordPortalApp) CaddyModule() caddy.ModuleInfo {
 
 func (d *DiscordPortalApp) Provision(_ caddy.Context) error {
 	// Discord App ID is used as entropy for JWT signing keys.
-	d.Key = hashString512(d.ClientID)
+	d.Key = hex.EncodeToString(randomness(64))
+	d.ExecutionKey = hashString512(d.Key)
 
-	// TODO: Signature will be used for cookie integrity checks, to ensure checks are inline with most recent Caddyfile.
-	// TODOTODO: Use parsed caddyfile signature for checks, instead of just Discord App Client ID.
-	d.Signature = hashString256(d.ClientID, 16)
 	return nil
 }
 
@@ -94,7 +105,7 @@ func (d DiscordPortalApp) Validate() error {
 	}
 
 	if d.RedirectURL == "" {
-		return fmt.Errorf("redirect URL has not bee configured")
+		return fmt.Errorf("redirect URL is not configured")
 	}
 
 	return nil
