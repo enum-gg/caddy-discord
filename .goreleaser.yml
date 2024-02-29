@@ -18,6 +18,9 @@ builds:
       - -s -w
     main: ./cmd/caddy
     binary: caddy-discord
+    ignore:
+      - goos: windows
+        goarch: arm64
 archives:
   - format: binary
 checksum:
@@ -25,13 +28,7 @@ checksum:
 snapshot:
   name_template: "{{ incpatch .Tag }}-rc"
 changelog:
-  sort: asc
-  skip: false
-  use: github-native
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
+  disable: true
 release:
   github:
     owner: enum-gg
