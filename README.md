@@ -3,7 +3,7 @@
 Caddy - Discord [![Discord](https://img.shields.io/discord/1063070457047289907.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/k9tVAwws8U)
 ====
 
-tl;dr: Authenticate caddy routes based on a Discord User Identity.
+tl;dr: Authenticate caddy routes based on a Discord User Identity with context of a specific guild (server).
 _<br />e.g. Accessing `/really-cool-people` requires user to have `{Role}` within `{Guild}`_
 
 This package contains a module allowing authorization in Caddy based on a Discord Identity, by using  Discords OAuth2 flow (authorization code grant).
@@ -26,7 +26,7 @@ http.handler.discord
 ```sh
 docker run -p 8080:8080 \
   --rm -v $PWD/Caddyfile:/etc/caddy/Caddyfile \
-  enumgg/caddy-discord:v1.0.1
+  enumgg/caddy-discord:v1.2.0
 ```
 
 ## Discord Resources
@@ -62,7 +62,7 @@ Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.git
 ```caddyfile
 {
     discord {
-        client_id 1000000000000000000 # Discord app OAuth client ID 
+        client_id 1000000000000000000 # Discord app OAuth client ID
         client_secret 8CEPZZZZZAfl_w19ZZZZW_k # Discord app OAuth secret
         redirect http://localhost:8080/discord/callback # Route you've configured with `discordauth callback`
 
@@ -71,7 +71,7 @@ Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.git
                 role 10630111112755034
             }
         }
-        
+
         realm just_for_me {
             user 31400111187026172
         }
@@ -81,13 +81,13 @@ Loosely inspired from [caddy-security's Discord OAuth2 module](https://authp.git
 http://localhost:8080 {
     route /discord/callback {
          # Desigate route as OAuth callback endpoint
-         discord callback 
+         discord callback
    }
 
     route /discordians-only {
-         # Only allow discord users that auth against 'really_cool_area' realm 
-         protect using clique 
-        
+         # Only allow discord users that auth against 'really_cool_area' realm
+         protect using clique
+
          respond "Hello {http.auth.user.username}!<br /><br /><img src='https://cdn.discordapp.com/avatars/{http.auth.user.id}/{http.auth.user.avatar}?size=4096.png'> "
     }
 
