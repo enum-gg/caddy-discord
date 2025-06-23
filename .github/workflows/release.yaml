@@ -19,10 +19,10 @@ jobs:
       - if: ${{ startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-rc')  }}
         run: echo "flags=-f .goreleaser.rc.yml" >> $GITHUB_ENV
       - name: Checkout code
-        uses: actions/checkout@v2
-      - uses: actions/setup-go@v4
+        uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.24"
       - uses: goreleaser/goreleaser-action@v4
         with:
           distribution: goreleaser
