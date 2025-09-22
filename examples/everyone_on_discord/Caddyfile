@@ -1,5 +1,5 @@
 {
-    discordauth {
+    discord {
         client_id 1063333331771186
         client_secret StKzYY66666669BtyXRH
         redirect http://localhost:8080/discord/callback
@@ -13,12 +13,13 @@
 
 http://localhost:8080 {
     route /discord/callback {
-        discordauth callback
+        discord callback
     }
 
     route /hello {
         protect with really_cool_area
-        respond "If you can see this you must have be logged into Discord!"
+        header Content-Type text/html
+        respond "Hello {http.auth.user.username}! You must be logged into Discord.<br /><br /><img src='https://cdn.discordapp.com/avatars/{http.auth.user.id}/{http.auth.user.avatar}?size=4096.png'> "
     }
 
     respond "Welcome to nothing"
