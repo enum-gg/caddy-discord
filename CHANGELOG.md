@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/enum-gg/caddy-discord/compare/v1.2.0...v1.2.1) (2025-09-22)
+
+
+### Bug Fixes
+
+* Simplified mappings for Discord Guild member API response to work around deprecated APIs ([e8e76bf](https://github.com/enum-gg/caddy-discord/commit/e8e76bf755e19912298307a19aa6010d9ae55f86))
+
 ## [1.2.0](https://github.com/enum-gg/caddy-discord/compare/v1.1.2...v1.2.0) (2024-02-29)
 
 
