@@ -59,17 +59,18 @@ type User struct {
 }
 
 type GuildMemberResponse struct {
-	User                       User        `json:"user"`
-	Nick                       string      `json:"nick"`
-	Avatar                     interface{} `json:"avatar"`
-	Roles                      []string    `json:"roles"`
-	JoinedAt                   time.Time   `json:"joined_at"`
-	PremiumSince               *time.Time  `json:"premiumSince"`
-	Deaf                       bool        `json:"deaf"`
-	Mute                       bool        `json:"mute"`
-	Pending                    *bool       `json:"pending"`
-	Permissions                *string     `json:"permissions"`
-	CommunicationDisabledUntil *time.Time  `json:"communication_disabled_until"`
+	User     User        `json:"user"`
+	Nick     string      `json:"nick"`
+	Avatar   interface{} `json:"avatar"`
+	Roles    []string    `json:"roles"`
+	JoinedAt time.Time   `json:"joined_at"`
+	//PremiumSince *time.Time  `json:"premiumSince"`
+	//Deaf         bool        `json:"deaf"`
+	//Mute         bool        `json:"mute"`
+	//Pending      *bool       `json:"pending"`
+	// Commenting out irrelevant fields.
+	//Permissions                *string     `json:"permissions"`
+	//CommunicationDisabledUntil *time.Time `json:"communication_disabled_until"`
 }
 
 type ErrorResponse struct {
