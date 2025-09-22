@@ -10,6 +10,9 @@ This package contains a module allowing authorization in Caddy based on a Discor
 
 ---
 
+> [!IMPORTANT]
+> As of 22nd September 2025 versions v1.2.0 and below will fail with guild/role-based rules due to Discord API changes. Update to v1.2.1 or higher to solve. 
+
 Licensed under [_GNU Affero General Public License v3.0_](https://github.com/enum-gg/caddy-discord/blob/main/LICENSE.md)
 <br><i>Logo by [@AutonomousCat](https://github.com/AutonomousCat/)</i>
 
@@ -26,7 +29,7 @@ http.handler.discord
 ```sh
 docker run -p 8080:8080 \
   --rm -v $PWD/Caddyfile:/etc/caddy/Caddyfile \
-  enumgg/caddy-discord:v1.2.0
+  enumgg/caddy-discord:v1.2.1
 ```
 
 ## Discord Resources
